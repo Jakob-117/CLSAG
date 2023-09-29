@@ -47,7 +47,18 @@ impl PublicSet {
     // This point is used extensively during the protocol for each member
     pub fn hashed_pubkey(&self) -> RistrettoPoint {
         let first_pubkey = &self.0[0].compress();
-        RistrettoPoint::hash_from_bytes::<Sha512>(first_pubkey.as_bytes())
+        
+        let input:&[u8; 32] = first_pubkey.as_bytes();
+        
+        let additional_param:&[u8; 4] = b"test";
+        let whole: [u8; 36] = {
+            let mut whole: [u8; 36] = [0; 36];
+            let (one, two) = whole.split_at_mut(input.len());
+            one.copy_from_slice(input);
+            two.copy_from_slice(additional_param);
+            whole
+        };
+        RistrettoPoint::hash_from_bytes::<Sha512>(&whole)
     }
     // Copies the public key set into a vector of bytes
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -129,7 +140,7 @@ mod test {
         for i in 0..private_set.len() {
             match (private_set.0.get(i), public_set.0.get(i)) {
                 (Some(private_key), Some(expected_public_key)) => {
-                    let public_key = private_key * &BASEPOINT;
+                    let public_key = private_key * BASEPOINT;
                     assert_eq!(public_key, *expected_public_key);
                 }
                 _ => panic!("could not get the private/public key at index {} ", i),
@@ -144,8 +155,8 @@ mod test {
         let dup_exists = public_set.duplicates_exist();
         assert!(!dup_exists);
 
-        let last_element = public_set.0.last().unwrap().clone();
-        public_set.0[0] = last_element;
+        let last_element = public_set.0.last().unwrap();
+        public_set.0[0] = *last_element;
 
         let dup_exists = public_set.duplicates_exist();
         assert!(dup_exists);

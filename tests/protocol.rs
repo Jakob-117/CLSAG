@@ -27,5 +27,14 @@ fn test_protocol() {
     let signature = clsag.sign(msg).unwrap();
     let res = signature.verify(&mut clsag.public_keys(), msg);
 
-    assert!(res.is_ok())
+    assert!(res.is_ok());
+
+    // This test will fail since the challenge is different and thus the verification fails (link = true?).
+    // However if the message doesn't change and it is signed again, the verification passes.
+    let msg2 = b"hello world2"; 
+    let signature2 = clsag.sign(msg2).unwrap();
+    let res2 = signature2.verify(&mut clsag.public_keys(), msg);
+
+    assert!(res2.is_err())
+
 }

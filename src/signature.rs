@@ -60,7 +60,19 @@ impl Signature {
         let mut challenge = self.challenge;
         for (pub_keys, response) in public_keys.iter().zip(self.responses.iter()) {
             let first_pubkey = pub_keys[0];
-            let hashed_pubkey = RistrettoPoint::hash_from_bytes::<Sha512>(first_pubkey.as_bytes());
+
+            let input:&[u8; 32] = first_pubkey.as_bytes();
+        
+            let additional_param:&[u8; 4] = b"test";
+            let whole: [u8; 36] = {
+                let mut whole: [u8; 36] = [0; 36];
+                let (one, two) = whole.split_at_mut(input.len());
+                one.copy_from_slice(input);
+                two.copy_from_slice(additional_param);
+                whole
+            };
+
+            let hashed_pubkey = RistrettoPoint::hash_from_bytes::<Sha512>(&whole);
             challenge = compute_challenge_ring(
                 pub_keys,
                 &challenge,
@@ -108,8 +120,20 @@ impl Signature {
             .zip(public_keys.iter())
             .map(|(response, pub_keys)| {
                 let first_pubkey = pub_keys[0];
+
+                let input:&[u8; 32] = first_pubkey.as_bytes();
+        
+                let additional_param:&[u8; 4] = b"test";
+                let whole: [u8; 36] = {
+                let mut whole: [u8; 36] = [0; 36];
+                    let (one, two) = whole.split_at_mut(input.len());
+                    one.copy_from_slice(input);
+                    two.copy_from_slice(additional_param);
+                    whole
+                };
+
                 let hashed_pubkey =
-                    RistrettoPoint::hash_from_bytes::<Sha512>(first_pubkey.as_bytes());
+                    RistrettoPoint::hash_from_bytes::<Sha512>(&whole);
 
                 response * hashed_pubkey
             })
