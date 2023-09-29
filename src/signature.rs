@@ -39,7 +39,7 @@ impl From<crate::member::Error> for Error {
 impl Signature {
     pub fn verify(
         &self,
-        public_keys: &mut Vec<Vec<CompressedRistretto>>,
+        public_keys: &mut Vec<Vec<CompressedRistretto>>, //Doesn't need to be mutable... yet. In the future this set will get updated at one point (i think)
         msg: &[u8],
     ) -> Result<(), Error> {
         // Skip subgroup check as ristretto points have co-factor 1.
@@ -57,7 +57,7 @@ impl Signature {
         // Calculate aggregation co-efficients
         let agg_coeffs = calc_aggregation_coefficients(&pubkey_matrix_bytes, &self.key_images, msg);
 
-        let mut challenge = self.challenge.clone();
+        let mut challenge = self.challenge;
         for (pub_keys, response) in public_keys.iter().zip(self.responses.iter()) {
             let first_pubkey = pub_keys[0];
             let hashed_pubkey = RistrettoPoint::hash_from_bytes::<Sha512>(first_pubkey.as_bytes());
@@ -121,7 +121,7 @@ impl Signature {
         // Calculate aggregation co-efficients
         let agg_coeffs = calc_aggregation_coefficients(&pubkey_matrix_bytes, &self.key_images, msg);
 
-        let mut challenge = self.challenge.clone();
+        let mut challenge = self.challenge;
 
         for ((resp_point, resp_hashed_point), pub_keys) in response_points
             .iter()
@@ -129,21 +129,22 @@ impl Signature {
             .zip(public_keys.iter())
         {
             let challenge_agg_coeffs: Vec<Scalar> =
-                agg_coeffs.iter().map(|ac| ac * &challenge).collect();
+                agg_coeffs.iter().map(|ac| ac * challenge).collect();
+                //agg_coeffs.iter().map(|ac| ac * &challenge).collect();
 
             let mut l_i = RistrettoPoint::optional_multiscalar_mul(
                 &challenge_agg_coeffs,
                 pub_keys.iter().map(|pt| pt.decompress()),
             )
             .ok_or(Error::BadPoint)?;
-            l_i = l_i + resp_point;
+            l_i += resp_point;
 
             let mut r_i = RistrettoPoint::optional_multiscalar_mul(
                 &challenge_agg_coeffs,
                 self.key_images.iter().map(|pt| pt.decompress()),
             )
             .ok_or(Error::BadPoint)?;
-            r_i = r_i + resp_hashed_point;
+            r_i += resp_hashed_point;
 
             let mut transcript = Transcript::new(b"clsag");
             transcript.append_message(b"", &pubkey_matrix_bytes);
@@ -163,11 +164,10 @@ impl Signature {
     fn pubkeys_to_bytes(&self, pubkey_matrix: &Vec<Vec<CompressedRistretto>>) -> Vec<u8> {
         let mut bytes: Vec<u8> =
             Vec::with_capacity(self.key_images.len() * self.responses.len() * 64);
-        for i in 0..pubkey_matrix.len() {
-            let pubkey_bytes: Vec<u8> = pubkey_matrix[i]
+        for i in pubkey_matrix{
+            let pubkey_bytes: Vec<u8> = i
                 .iter()
-                .map(|pubkey| pubkey.to_bytes().to_vec())
-                .flatten()
+                .flat_map(|pubkey| pubkey.to_bytes().to_vec())
                 .collect();
             bytes.extend(pubkey_bytes);
         }

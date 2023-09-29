@@ -54,7 +54,7 @@ impl Member {
         Member {
             nonce: Some(nonce),
 
-            public_set: public_set,
+            public_set,
 
             hashed_pubkey_basepoint: hashed_pubkey,
 
@@ -81,7 +81,7 @@ impl Member {
         Member {
             nonce: None,
 
-            public_set: public_set,
+            public_set,
 
             hashed_pubkey_basepoint: hashed_pubkey,
 
@@ -125,7 +125,8 @@ impl Member {
         let mut transcript = Transcript::new(b"clsag");
 
         // L = nonce * basepoint
-        let l = nonce * &BASEPOINT;
+        let l = nonce * BASEPOINT;
+        //let l = nonce * &BASEPOINT;
 
         // R = nonce * hashed_pubkey
         let r = nonce * self.hashed_pubkey_basepoint;

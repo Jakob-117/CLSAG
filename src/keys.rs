@@ -19,6 +19,15 @@ impl PublicSet {
     pub fn len(&self) -> usize {
         self.0.len()
     }
+
+    // Returns true if the set is empty, else false
+    pub fn is_empty(&self) -> bool {
+        if self.0.len() == 0{
+            return true;
+        }
+        false
+    }
+
     // Checks if the public set contains any duplicate keys
     pub fn duplicates_exist(&self) -> bool {
         // XXX: Very in-efficient way to do this.
@@ -44,8 +53,7 @@ impl PublicSet {
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0
             .iter()
-            .map(|point| point.compress().to_bytes().to_vec())
-            .flatten()
+            .flat_map(|point| point.compress().to_bytes().to_vec())
             .collect()
     }
 
@@ -92,6 +100,14 @@ impl PrivateSet {
     // Returns the number of private keys in the set
     pub fn len(&self) -> usize {
         self.0.len()
+    }
+
+    // Returns true if the set is empty, else false
+    pub fn is_empty(&self) -> bool {
+        if self.0.len() == 0{
+            return true;
+        }
+        false
     }
 }
 

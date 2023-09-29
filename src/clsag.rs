@@ -42,6 +42,12 @@ pub struct Clsag {
     members: Vec<Member>,
 }
 
+impl Default for Clsag {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Clsag {
     // Creates a new clsag component with a configured basepoint
     pub fn new() -> Self {
@@ -58,8 +64,7 @@ impl Clsag {
     pub fn public_keys_bytes(&self) -> Vec<u8> {
         self.members
             .iter()
-            .map(|member| member.public_set.to_bytes())
-            .flatten()
+            .flat_map(|member| member.public_set.to_bytes())
             .collect()
     }
     // Returns public keys from all known members
@@ -126,7 +131,6 @@ impl Clsag {
                     let mem_response =
                         member
                             .response
-                            .clone()
                             .ok_or(Error::UnderlyingErr(String::from(
                                 "member does not have a response value",
                             )))?;
@@ -146,7 +150,7 @@ impl Clsag {
         Ok(Signature {
             challenge: first_challenge,
             responses: all_responses,
-            key_images: key_images,
+            key_images,
         })
     }
     // Returns the position of the signer in the ring
@@ -217,8 +221,7 @@ pub fn calc_aggregation_coefficients(
     // precompute (pubkey_matrix || keyimages)
     let key_images_bytes: Vec<u8> = key_images
         .iter()
-        .map(|key_image| key_image.to_bytes().to_vec())
-        .flatten()
+        .flat_map(|key_image| key_image.to_bytes().to_vec())
         .collect();
 
     let num_keys_per_user = key_images.len();
